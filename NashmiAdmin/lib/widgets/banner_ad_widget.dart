@@ -33,7 +33,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
     try {
       await _adMobService.initialize();
-      _bannerAd = _adMobService.createBannerAd();
+      _bannerAd = await _adMobService.createBannerAd();
 
       setState(() {
         _isAdLoaded = true;
@@ -71,10 +71,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
       return const SizedBox(
         height: 50,
         child: Center(
-          child: Text(
-            'تحميل الإعلان...',
-            style: TextStyle(color: Colors.grey),
-          ),
+          child: Text('تحميل الإعلان...', style: TextStyle(color: Colors.grey)),
         ),
       );
     }

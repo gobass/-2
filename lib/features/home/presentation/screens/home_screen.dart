@@ -165,10 +165,14 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
 
       // Banner Ad at bottom
-      bottomNavigationBar: Container(
-        height: 60,
-        child: _adService.getBannerAdWidget(),
-      ),
+      bottomNavigationBar:
+          _adService.isBannerAdLoaded && _adService.bannerAd != null
+          ? Container(
+              height: _adService.bannerAd!.size.height.toDouble(),
+              width: double.infinity,
+              child: AdWidget(ad: _adService.bannerAd!),
+            )
+          : null,
     );
   }
 }

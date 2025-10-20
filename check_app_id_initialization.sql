@@ -1,0 +1,1 @@
+"-- Check if AdMob app ID is being initialized in the app -- SELECT '=== CHECKING ADMOB APP ID INITIALIZATION ===' as status; SELECT config_key, config_value FROM app_config WHERE config_key LIKE 'admob_app_id%' ORDER BY config_key;" 

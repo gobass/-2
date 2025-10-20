@@ -18,56 +18,55 @@ class AdService {
 
   Future<String> get _getBannerAdUnitId async {
     if (_bannerAdUnitId == null) {
-      _bannerAdUnitId =
-          await _supabaseService.getConfigValue(
-            Platform.isAndroid ? 'admob_banner_android' : 'admob_banner_ios',
-          ) ??
-          (Platform.isAndroid
-              ? 'ca-app-pub-3940256099942544/6300978111' // Test ID fallback
-              : 'ca-app-pub-3940256099942544/2934735716'); // Test ID fallback
-      print('🔍 Banner Ad Unit ID loaded: $_bannerAdUnitId');
+      _bannerAdUnitId = await _supabaseService.getConfigValue(
+        Platform.isAndroid ? 'admob_banner_android' : 'admob_banner_ios',
+      );
+      if (_bannerAdUnitId == null) {
+        throw Exception('Banner Ad Unit ID not found in database');
+      }
+      print('🔍 Banner Ad Unit ID loaded from database: $_bannerAdUnitId');
     }
     return _bannerAdUnitId!;
   }
 
   Future<String> get _getInterstitialAdUnitId async {
     if (_interstitialAdUnitId == null) {
-      _interstitialAdUnitId =
-          await _supabaseService.getConfigValue(
-            Platform.isAndroid
-                ? 'admob_interstitial_android'
-                : 'admob_interstitial_ios',
-          ) ??
-          (Platform.isAndroid
-              ? 'ca-app-pub-3940256099942544/1033173712' // Test ID fallback
-              : 'ca-app-pub-3940256099942544/4411468910'); // Test ID fallback
+      _interstitialAdUnitId = await _supabaseService.getConfigValue(
+        Platform.isAndroid
+            ? 'admob_interstitial_android'
+            : 'admob_interstitial_ios',
+      );
+      if (_interstitialAdUnitId == null) {
+        throw Exception('Interstitial Ad Unit ID not found in database');
+      }
+      print(
+        '🔍 Interstitial Ad Unit ID loaded from database: $_interstitialAdUnitId',
+      );
     }
     return _interstitialAdUnitId!;
   }
 
   Future<String> get _getRewardedAdUnitId async {
     if (_rewardedAdUnitId == null) {
-      _rewardedAdUnitId =
-          await _supabaseService.getConfigValue(
-            Platform.isAndroid
-                ? 'admob_rewarded_android'
-                : 'admob_rewarded_ios',
-          ) ??
-          (Platform.isAndroid
-              ? 'ca-app-pub-3940256099942544/5224354917' // Test ID fallback
-              : 'ca-app-pub-3940256099942544/1712485313'); // Test ID fallback
+      _rewardedAdUnitId = await _supabaseService.getConfigValue(
+        Platform.isAndroid ? 'admob_rewarded_android' : 'admob_rewarded_ios',
+      );
+      if (_rewardedAdUnitId == null) {
+        throw Exception('Rewarded Ad Unit ID not found in database');
+      }
+      print('🔍 Rewarded Ad Unit ID loaded from database: $_rewardedAdUnitId');
     }
     return _rewardedAdUnitId!;
   }
 
   // Hardcoded production ad unit IDs as fallback
   static const Map<String, String> _productionAdIds = {
-    'banner_android': 'ca-app-pub-3940256099942544/6300978111',
-    'banner_ios': 'ca-app-pub-3940256099942544/2934735716',
-    'interstitial_android': 'ca-app-pub-3940256099942544/1033173712',
-    'interstitial_ios': 'ca-app-pub-3940256099942544/4411468910',
-    'rewarded_android': 'ca-app-pub-3940256099942544/5224354917',
-    'rewarded_ios': 'ca-app-pub-3940256099942544/1712485313',
+    'banner_android': 'ca-app-pub-3794036444002573/6894673538',
+    'banner_ios': 'ca-app-pub-3794036444002573/6894673538',
+    'interstitial_android': 'ca-app-pub-3794036444002573/8670789633',
+    'interstitial_ios': 'ca-app-pub-3794036444002573/8670789633',
+    'rewarded_android': 'ca-app-pub-3794036444002573/3251280337',
+    'rewarded_ios': 'ca-app-pub-3794036444002573/3251280337',
   };
 
   BannerAd? _bannerAd;
@@ -107,10 +106,9 @@ class AdService {
           '📱 Initializing AdMob for ${Platform.isAndroid ? 'Android' : 'iOS'}...',
         );
 
-        // Configure for production ads - don't set test devices to avoid "No fill" errors
+        // Configure for production ads
         await MobileAds.instance.updateRequestConfiguration(
           RequestConfiguration(
-            // Leave testDeviceIds empty to use production ads
             tagForChildDirectedTreatment: TagForChildDirectedTreatment.no,
             tagForUnderAgeOfConsent: TagForUnderAgeOfConsent.no,
           ),
@@ -390,11 +388,12 @@ class AdService {
 
   // الحصول على ويدجت إعلان البانر
   Widget getBannerAdWidget() {
-    if (_bannerAd != null && _isBannerAdLoaded) {
-      print('✅ Returning loaded banner ad widget');
+    if (_bannerAd != null) {
+      print('✅ Returning banner ad widget');
       return Container(height: 50, child: AdWidget(ad: _bannerAd!));
     } else {
-      print('⏳ Banner ad not loaded, showing placeholder');
+      print('⏳ Banner ad not created yet, loading...');
+      loadBannerAd(); // Load if not loaded
       return Container(
         height: 50,
         color: Colors.grey[900],

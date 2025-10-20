@@ -49,6 +49,12 @@ dependencies:
   supabase_flutter: ^2.10.0
   file_picker: ^8.0.0+1
   get_it: ^8.2.0
+  sqlite3: ^2.9.3
+  sqflite_common_ffi: ^2.3.6
+  sqlite3_flutter_libs: ^0.5.40
+  sqflite: ^2.4.2
+  drift: ^2.29.0
+  drift_dev: ^2.29.0
 
 dev_dependencies:
   flutter_test:

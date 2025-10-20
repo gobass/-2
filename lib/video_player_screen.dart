@@ -26,7 +26,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   Future<void> _loadBannerAd() async {
     _bannerAd = BannerAd(
-      adUnitId: 'ca-app-pub-3940256099942544/6300978111', // Test ad unit ID
+      adUnitId:
+          'ca-app-pub-3794036444002573/6894673538', // Production ad unit ID
       request: AdRequest(),
       size: AdSize.banner,
       listener: BannerAdListener(

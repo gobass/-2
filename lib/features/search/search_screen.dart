@@ -5,6 +5,7 @@ import 'package:nashmi_tf/services/mock_data_service.dart';
 import 'package:nashmi_tf/services/supabase_service.dart';
 import 'package:nashmi_tf/features/home/presentation/widgets/movie_list_horizontal.dart';
 import 'package:nashmi_tf/services/ad_service.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -316,9 +317,14 @@ class _SearchScreenState extends State<SearchScreen> {
 
         // Banner Ad
         Container(
-          height: 60,
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: _adService.getBannerAdWidget(),
+          child: _adService.isBannerAdLoaded && _adService.bannerAd != null
+              ? Container(
+                  height: _adService.bannerAd!.size.height.toDouble(),
+                  width: double.infinity,
+                  child: AdWidget(ad: _adService.bannerAd!),
+                )
+              : null,
         ),
 
         Expanded(

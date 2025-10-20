@@ -1,8 +1,27 @@
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AdMobService {
-  static const String bannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111'; // Test ID
-  static const String interstitialAdUnitId = 'ca-app-pub-3940256099942544/1033173712'; // Test ID
+  // Ad Unit IDs - loaded from database
+  static String? _bannerAdUnitId;
+  static String? _interstitialAdUnitId;
+
+  static Future<String> get bannerAdUnitId async {
+    if (_bannerAdUnitId == null) {
+      // TODO: Load from database
+      _bannerAdUnitId =
+          'ca-app-pub-3794036444002573/6894673538'; // Temporary fallback
+    }
+    return _bannerAdUnitId!;
+  }
+
+  static Future<String> get interstitialAdUnitId async {
+    if (_interstitialAdUnitId == null) {
+      // TODO: Load from database
+      _interstitialAdUnitId =
+          'ca-app-pub-3794036444002573/8670789633'; // Temporary fallback
+    }
+    return _interstitialAdUnitId!;
+  }
 
   BannerAd? _bannerAd;
   bool _isBannerAdLoaded = false;
@@ -13,9 +32,10 @@ class AdMobService {
   }
 
   // Create banner ad
-  BannerAd createBannerAd() {
+  Future<BannerAd> createBannerAd() async {
+    final adUnitId = await bannerAdUnitId;
     return BannerAd(
-      adUnitId: bannerAdUnitId,
+      adUnitId: adUnitId,
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
@@ -34,7 +54,7 @@ class AdMobService {
   // Load banner ad
   Future<void> loadBannerAd() async {
     if (_bannerAd == null) {
-      _bannerAd = createBannerAd();
+      _bannerAd = await createBannerAd();
     }
     await _bannerAd!.load();
   }
@@ -55,10 +75,11 @@ class AdMobService {
   }
 
   // Create interstitial ad
-  InterstitialAd? createInterstitialAd() {
+  Future<InterstitialAd?> createInterstitialAd() async {
+    final adUnitId = await interstitialAdUnitId;
     InterstitialAd? interstitialAd;
-    InterstitialAd.load(
-      adUnitId: interstitialAdUnitId,
+    await InterstitialAd.load(
+      adUnitId: adUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
@@ -73,8 +94,8 @@ class AdMobService {
   }
 
   // Show interstitial ad
-  void showInterstitialAd() {
-    final interstitialAd = createInterstitialAd();
+  Future<void> showInterstitialAd() async {
+    final interstitialAd = await createInterstitialAd();
     if (interstitialAd != null) {
       interstitialAd.show();
     }

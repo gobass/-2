@@ -20,7 +20,7 @@ class MoviesViewingScreen extends StatefulWidget {
 
 class _MoviesViewingScreenState extends State<MoviesViewingScreen> {
   final SupabaseService _supabaseService = Get.find<SupabaseService>();
-  late final AdService _adService;
+  final AdService _adService = AdService();
 
   List<Map<String, dynamic>> _allMovies = [];
   List<Map<String, dynamic>> _featuredMovies = [];
@@ -36,7 +36,7 @@ class _MoviesViewingScreenState extends State<MoviesViewingScreen> {
   @override
   void initState() {
     super.initState();
-    _adService = Get.find<AdService>();
+    _adService.initialize();
     _loadMovies();
   }
 
@@ -226,10 +226,14 @@ class _MoviesViewingScreenState extends State<MoviesViewingScreen> {
       ),
 
       // Banner Ad at bottom
-      bottomNavigationBar: Container(
-        height: 60,
-        child: _adService.getBannerAdWidget(),
-      ),
+      bottomNavigationBar:
+          _adService.isBannerAdLoaded && _adService.bannerAd != null
+          ? Container(
+              height: _adService.bannerAd!.size.height.toDouble(),
+              width: double.infinity,
+              child: AdWidget(ad: _adService.bannerAd!),
+            )
+          : null,
     );
   }
 }
