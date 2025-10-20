@@ -1,3 +1,59 @@
+# Flutter/Dart/Pub related
+.dart_tool/
+.pub/
+build/
+/.idea/
+.vscode/
+.packages
+pubspec.lock
+/.flutter-plugins
+/.flutter-plugins-dependencies
+/.metadata
+
+# iOS
+Pods/
+Runner.xcworkspace/
+DerivedData/
+*.xcuserstate
+*.mode1v3
+*.pbxproj
+*.xcworkspace
+
+# Android
+/.gradle/
+/.idea/
+local.properties
+**/app/build/
+**/build/
+
+# Visual Studio Code
+.vscode/*
+!/.vscode/settings.json
+!/.vscode/tasks.json
+!/.vscode/launch.json
+
+# Android Studio
+.idea/
+*.iml
+
+# Assets that may be built
+**/assets/asset_manifest.json
+
+# Generated plugin registrant
+/.dart_tool/
+
+# macOS
+DerivedData/
+*.DS_Store
+
+# Windows
+*.lnk
+
+# Other
+*.log
+*.swp
+*.tmp
+*.bak
 # Miscellaneous
 *.class
 *.log

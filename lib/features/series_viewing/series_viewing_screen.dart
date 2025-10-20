@@ -192,7 +192,7 @@ class _SeriesViewingScreenState extends State<SeriesViewingScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: _isLoading
-          ? const _LoadingView()
+          ? _LoadingView()
           : CustomScrollView(
               slivers: [
                 // Hero Banner
@@ -655,7 +655,7 @@ class _LoadingViewState extends State<_LoadingView>
       vsync: this,
     )..repeat(reverse: true);
 
-    _fadeAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 

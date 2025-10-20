@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:async';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'supabase_service.dart';
 
 class AdService {
@@ -17,33 +18,44 @@ class AdService {
 
   Future<String> get _getBannerAdUnitId async {
     if (_bannerAdUnitId == null) {
-      _bannerAdUnitId = await _supabaseService.getConfigValue(
-        Platform.isAndroid ? 'admob_banner_android' : 'admob_banner_ios'
-      ) ?? (Platform.isAndroid
-          ? 'ca-app-pub-3940256099942544/6300978111' // Test ID fallback
-          : 'ca-app-pub-3940256099942544/2934735716'); // Test ID fallback
+      _bannerAdUnitId =
+          await _supabaseService.getConfigValue(
+            Platform.isAndroid ? 'admob_banner_android' : 'admob_banner_ios',
+          ) ??
+          (Platform.isAndroid
+              ? 'ca-app-pub-3940256099942544/6300978111' // Test ID fallback
+              : 'ca-app-pub-3940256099942544/2934735716'); // Test ID fallback
+      print('🔍 Banner Ad Unit ID loaded: $_bannerAdUnitId');
     }
     return _bannerAdUnitId!;
   }
 
   Future<String> get _getInterstitialAdUnitId async {
     if (_interstitialAdUnitId == null) {
-      _interstitialAdUnitId = await _supabaseService.getConfigValue(
-        Platform.isAndroid ? 'admob_interstitial_android' : 'admob_interstitial_ios'
-      ) ?? (Platform.isAndroid
-          ? 'ca-app-pub-3940256099942544/1033173712' // Test ID fallback
-          : 'ca-app-pub-3940256099942544/4411468910'); // Test ID fallback
+      _interstitialAdUnitId =
+          await _supabaseService.getConfigValue(
+            Platform.isAndroid
+                ? 'admob_interstitial_android'
+                : 'admob_interstitial_ios',
+          ) ??
+          (Platform.isAndroid
+              ? 'ca-app-pub-3940256099942544/1033173712' // Test ID fallback
+              : 'ca-app-pub-3940256099942544/4411468910'); // Test ID fallback
     }
     return _interstitialAdUnitId!;
   }
 
   Future<String> get _getRewardedAdUnitId async {
     if (_rewardedAdUnitId == null) {
-      _rewardedAdUnitId = await _supabaseService.getConfigValue(
-        Platform.isAndroid ? 'admob_rewarded_android' : 'admob_rewarded_ios'
-      ) ?? (Platform.isAndroid
-          ? 'ca-app-pub-3940256099942544/5224354917' // Test ID fallback
-          : 'ca-app-pub-3940256099942544/1712485313'); // Test ID fallback
+      _rewardedAdUnitId =
+          await _supabaseService.getConfigValue(
+            Platform.isAndroid
+                ? 'admob_rewarded_android'
+                : 'admob_rewarded_ios',
+          ) ??
+          (Platform.isAndroid
+              ? 'ca-app-pub-3940256099942544/5224354917' // Test ID fallback
+              : 'ca-app-pub-3940256099942544/1712485313'); // Test ID fallback
     }
     return _rewardedAdUnitId!;
   }
@@ -72,6 +84,10 @@ class AdService {
 
   // Timer for 10-minute ads
   Timer? _tenMinuteTimer;
+  Timer? _fiveMinuteTimer;
+  Timer? _videoAdTimer;
+  int _navigationAdCount = 0;
+  static const int _maxNavigationAdsPerSession = 4;
 
   // Initialize AdMob
   Future<void> initialize() async {
@@ -82,26 +98,46 @@ class AdService {
 
     // Check if running on web - Google Mobile Ads doesn't work on web
     try {
+      if (kIsWeb) {
+        print('❌ Ads not supported on web platform');
+        return;
+      }
       if (Platform.isAndroid || Platform.isIOS) {
-        print('📱 Initializing AdMob for ${Platform.isAndroid ? 'Android' : 'iOS'}...');
+        print(
+          '📱 Initializing AdMob for ${Platform.isAndroid ? 'Android' : 'iOS'}...',
+        );
+
+        // Configure for production ads - don't set test devices to avoid "No fill" errors
+        await MobileAds.instance.updateRequestConfiguration(
+          RequestConfiguration(
+            // Leave testDeviceIds empty to use production ads
+            tagForChildDirectedTreatment: TagForChildDirectedTreatment.no,
+            tagForUnderAgeOfConsent: TagForUnderAgeOfConsent.no,
+          ),
+        );
+
         await MobileAds.instance.initialize();
         print('✅ AdMob initialized successfully');
 
         // تحميل الإعلانات
         print('📱 Loading ads...');
-        await _loadBannerAd();
+        await loadBannerAd();
         await _loadInterstitialAd();
         await _loadRewardedAd();
 
         // Start 10-minute timer for ads
         _startTenMinuteTimer();
+        // Start 5-minute timer for banner ads
+        _startFiveMinuteTimer();
+        // Start navigation ads
+        _startNavigationAds();
         print('✅ AdService initialization completed');
 
         // Show initialization status
         print('📊 AdService Status: ${getAdStatus()}');
         print('📊 Detailed Status: ${getDetailedAdStatus()}');
       } else {
-        print('❌ Ads not supported on this platform (web)');
+        print('❌ Ads not supported on this platform');
       }
     } catch (e) {
       print('❌ Failed to initialize AdMob: $e');
@@ -122,12 +158,35 @@ class AdService {
     });
   }
 
+  void _startFiveMinuteTimer() {
+    _fiveMinuteTimer?.cancel();
+    _fiveMinuteTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
+      print('5-minute timer triggered - loading banner ad');
+      loadBannerAd();
+    });
+  }
+
+  void _startNavigationAds() {
+    // Navigation ads are triggered by route changes, not timers
+    // This method is just for initialization consistency
+    print('Navigation ads initialized - will show on route changes');
+  }
+
   // تحميل إعلان البانر
-  Future<void> _loadBannerAd() async {
+  Future<void> loadBannerAd() async {
     try {
       final adUnitId = await _getBannerAdUnitId;
       print('📱 Loading banner ad with ID: $adUnitId');
-      print('📱 Banner ad current status: ${_bannerAd != null ? 'exists' : 'null'}, loaded: $_isBannerAdLoaded');
+      print(
+        '📱 Banner ad current status: ${_bannerAd != null ? 'exists' : 'null'}, loaded: $_isBannerAdLoaded',
+      );
+
+      // Dispose existing ad if any
+      if (_bannerAd != null) {
+        _bannerAd!.dispose();
+        _bannerAd = null;
+        _isBannerAdLoaded = false;
+      }
 
       _bannerAd = BannerAd(
         adUnitId: adUnitId,
@@ -137,17 +196,20 @@ class AdService {
           onAdLoaded: (ad) {
             print('✅ Banner ad loaded successfully');
             _isBannerAdLoaded = true;
-            print('📊 Banner ad status after load: loaded = $_isBannerAdLoaded');
+            print(
+              '📊 Banner ad status after load: loaded = $_isBannerAdLoaded',
+            );
           },
           onAdFailedToLoad: (ad, error) {
             print('❌ Banner ad failed to load: $error');
             print('❌ Error code: ${error.code}, message: ${error.message}');
             _isBannerAdLoaded = false;
             ad.dispose();
+            _bannerAd = null;
             // Retry loading after 15 seconds (reduced from 30)
             Future.delayed(const Duration(seconds: 15), () {
               print('🔄 Retrying banner ad load...');
-              _loadBannerAd();
+              loadBannerAd();
             });
           },
         ),
@@ -160,7 +222,7 @@ class AdService {
       // Retry after error
       Future.delayed(const Duration(seconds: 15), () {
         print('🔄 Retrying banner ad load after error...');
-        _loadBannerAd();
+        loadBannerAd();
       });
     }
   }
@@ -170,7 +232,9 @@ class AdService {
     try {
       final adUnitId = await _getInterstitialAdUnitId;
       print('🎬 Loading interstitial ad with ID: $adUnitId');
-      print('🎬 Interstitial ad current status: ${_interstitialAd != null ? 'exists' : 'null'}');
+      print(
+        '🎬 Interstitial ad current status: ${_interstitialAd != null ? 'exists' : 'null'}',
+      );
 
       await InterstitialAd.load(
         adUnitId: adUnitId,
@@ -179,7 +243,9 @@ class AdService {
           onAdLoaded: (ad) {
             _interstitialAd = ad;
             print('✅ Interstitial ad loaded successfully');
-            print('📊 Interstitial ad status after load: loaded = ${_interstitialAd != null}');
+            print(
+              '📊 Interstitial ad status after load: loaded = ${_interstitialAd != null}',
+            );
           },
           onAdFailedToLoad: (error) {
             print('❌ Interstitial ad failed to load: $error');
@@ -208,7 +274,9 @@ class AdService {
     try {
       final adUnitId = await _getRewardedAdUnitId;
       print('🎁 Loading rewarded ad with ID: $adUnitId');
-      print('🎁 Rewarded ad current status: ${_rewardedAd != null ? 'exists' : 'null'}');
+      print(
+        '🎁 Rewarded ad current status: ${_rewardedAd != null ? 'exists' : 'null'}',
+      );
 
       await RewardedAd.load(
         adUnitId: adUnitId,
@@ -217,7 +285,9 @@ class AdService {
           onAdLoaded: (ad) {
             _rewardedAd = ad;
             print('✅ Rewarded ad loaded successfully');
-            print('📊 Rewarded ad status after load: loaded = ${_rewardedAd != null}');
+            print(
+              '📊 Rewarded ad status after load: loaded = ${_rewardedAd != null}',
+            );
           },
           onAdFailedToLoad: (error) {
             print('❌ Rewarded ad failed to load: $error');
@@ -321,8 +391,10 @@ class AdService {
   // الحصول على ويدجت إعلان البانر
   Widget getBannerAdWidget() {
     if (_bannerAd != null && _isBannerAdLoaded) {
-      return AdWidget(ad: _bannerAd!);
+      print('✅ Returning loaded banner ad widget');
+      return Container(height: 50, child: AdWidget(ad: _bannerAd!));
     } else {
+      print('⏳ Banner ad not loaded, showing placeholder');
       return Container(
         height: 50,
         color: Colors.grey[900],
@@ -340,6 +412,8 @@ class AdService {
   void dispose() {
     print('🧹 Disposing AdService...');
     _tenMinuteTimer?.cancel();
+    _fiveMinuteTimer?.cancel();
+    _videoAdTimer?.cancel();
     _bannerAd?.dispose();
     _interstitialAd?.dispose();
     _rewardedAd?.dispose();
@@ -350,6 +424,7 @@ class AdService {
   void pauseAds() {
     print('⏸️ Pausing ads...');
     _tenMinuteTimer?.cancel();
+    _videoAdTimer?.cancel();
     print('✅ Ads paused');
   }
 
@@ -371,7 +446,14 @@ class AdService {
     _interstitialAd = null;
     _rewardedAd = null;
     _isBannerAdLoaded = false;
+    _navigationAdCount = 0; // Reset navigation ad count
     print('✅ Ads disabled completely');
+  }
+
+  // Reset navigation ad count (for new session)
+  void resetNavigationAdCount() {
+    print('🔄 Resetting navigation ad count');
+    _navigationAdCount = 0;
   }
 
   // إحصائيات الإعلانات
@@ -392,9 +474,15 @@ class AdService {
         'interstitial': _interstitialAdUnitId,
         'rewarded': _rewardedAdUnitId,
       },
-      'platform': Platform.isAndroid ? 'Android' : Platform.isIOS ? 'iOS' : 'Other',
+      'platform': Platform.isAndroid
+          ? 'Android'
+          : Platform.isIOS
+          ? 'iOS'
+          : 'Other',
       'adsEnabled': _adsEnabled,
       'timerActive': _tenMinuteTimer?.isActive ?? false,
+      'navigationAdsShown': _navigationAdCount,
+      'maxNavigationAds': _maxNavigationAdsPerSession,
       'timestamp': DateTime.now().toIso8601String(),
     };
   }
@@ -410,7 +498,7 @@ class AdService {
         print('✅ Banner ad exists');
       } else {
         print('❌ Banner ad missing - reloading...');
-        await _loadBannerAd();
+        await loadBannerAd();
         allValid = false;
       }
 
@@ -432,7 +520,9 @@ class AdService {
         allValid = false;
       }
 
-      print('🔍 Ad validation completed: ${allValid ? 'All valid' : 'Some missing'}');
+      print(
+        '🔍 Ad validation completed: ${allValid ? 'All valid' : 'Some missing'}',
+      );
       return allValid;
     } catch (e) {
       print('❌ Error during ad validation: $e');
@@ -457,7 +547,11 @@ class AdService {
     return {
       'serviceInfo': {
         'adsEnabled': _adsEnabled,
-        'platform': Platform.isAndroid ? 'Android' : Platform.isIOS ? 'iOS' : 'Other',
+        'platform': Platform.isAndroid
+            ? 'Android'
+            : Platform.isIOS
+            ? 'iOS'
+            : 'Other',
         'timerActive': _tenMinuteTimer?.isActive ?? false,
       },
       'adStatus': getAdStatus(),
@@ -490,6 +584,42 @@ class AdService {
     showRewardedAd(onRewardEarned);
   }
 
+  // Show navigation ad (called when user navigates between screens)
+  void showNavigationAd([Function? onAdDismissed]) {
+    if (_navigationAdCount >= _maxNavigationAdsPerSession) {
+      print(
+        '🧭 Navigation ad limit reached ($_navigationAdCount/$_maxNavigationAdsPerSession) - skipping',
+      );
+      if (onAdDismissed != null) onAdDismissed();
+      return;
+    }
+
+    print(
+      '🧭 Showing navigation ad (${_navigationAdCount + 1}/$_maxNavigationAdsPerSession)...',
+    );
+    _navigationAdCount++;
+    showInterstitialAd(onAdDismissed);
+  }
+
+  // Start video ad timer (5 minutes during video playback)
+  void startVideoAdTimer() {
+    print('🎬 Starting video ad timer (5 minutes)');
+    _videoAdTimer?.cancel();
+    _videoAdTimer = Timer(const Duration(minutes: 5), () {
+      print('🎬 Video ad timer triggered - showing interstitial ad');
+      showInterstitialAd();
+      // Restart the timer for next 5 minutes
+      startVideoAdTimer();
+    });
+  }
+
+  // Stop video ad timer
+  void stopVideoAdTimer() {
+    print('🎬 Stopping video ad timer');
+    _videoAdTimer?.cancel();
+    _videoAdTimer = null;
+  }
+
   // Get ad status for debugging
   Map<String, dynamic> getAdStatus() {
     return {
@@ -497,14 +627,18 @@ class AdService {
       'interstitialLoaded': _interstitialAd != null,
       'rewardedLoaded': _rewardedAd != null,
       'adsEnabled': _adsEnabled,
-      'platform': Platform.isAndroid ? 'Android' : Platform.isIOS ? 'iOS' : 'Other',
+      'platform': Platform.isAndroid
+          ? 'Android'
+          : Platform.isIOS
+          ? 'iOS'
+          : 'Other',
     };
   }
 
   // إعادة تحميل جميع الإعلانات يدوياً
   Future<void> reloadAllAds() async {
     print('🔄 Reloading all ads manually...');
-    await _loadBannerAd();
+    await loadBannerAd();
     await _loadInterstitialAd();
     await _loadRewardedAd();
     print('✅ All ads reload completed');
@@ -513,7 +647,7 @@ class AdService {
   // إعادة تحميل إعلان البانر فقط
   Future<void> reloadBannerAd() async {
     print('🔄 Reloading banner ad manually...');
-    await _loadBannerAd();
+    await loadBannerAd();
     print('✅ Banner ad reload completed');
   }
 
@@ -548,7 +682,11 @@ class AdService {
         'adUnitId': _rewardedAdUnitId,
       },
       'adsEnabled': _adsEnabled,
-      'platform': Platform.isAndroid ? 'Android' : Platform.isIOS ? 'iOS' : 'Other',
+      'platform': Platform.isAndroid
+          ? 'Android'
+          : Platform.isIOS
+          ? 'iOS'
+          : 'Other',
       'timestamp': DateTime.now().toIso8601String(),
     };
   }

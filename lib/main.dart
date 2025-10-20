@@ -3,12 +3,17 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
+import 'package:universal_platform/universal_platform.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import 'services/supabase_service.dart';
 import 'services/theme_service.dart';
 import 'services/auth_service.dart';
 import 'services/rating_service.dart';
 import 'services/favorites_service.dart';
 import 'services/continuous_watching_service.dart';
+import 'services/ad_service.dart';
 import 'views/movies_view.dart';
 import 'views/ads_view.dart';
 import 'views/series_view.dart';
@@ -28,6 +33,20 @@ import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize WebView platform for iframe videos
+  if (!kIsWeb) {
+    try {
+      if (UniversalPlatform.isAndroid) {
+        WebViewPlatform.instance = AndroidWebViewPlatform();
+      } else if (UniversalPlatform.isIOS) {
+        WebViewPlatform.instance = WebKitWebViewPlatform();
+      }
+      print('✅ WebView platform initialized successfully');
+    } catch (e) {
+      print('⚠️ WebView platform initialization failed: $e');
+    }
+  }
 
   try {
     print('🚀 Starting Nashmi Dashboard...');
@@ -49,6 +68,12 @@ void main() async {
     Get.put(RatingService());
     Get.put(FavoritesService());
     Get.put(ContinuousWatchingService());
+    Get.put(AdService());
+
+    // Initialize AdService after putting it in GetX
+    final adService = Get.find<AdService>();
+    await adService.initialize();
+    print('✅ AdService initialized successfully');
 
     // Set preferred orientations
     await SystemChrome.setPreferredOrientations([
@@ -176,10 +201,30 @@ class MyApp extends StatelessWidget {
       opaqueRoute: Get.isOpaqueRouteDefault,
       popGesture: Get.isPopGestureEnable,
       transitionDuration: Get.defaultTransitionDuration,
+      routingCallback: (routing) {
+        if (routing != null && routing.current != null) {
+          // Show navigation ad when user navigates to a new screen
+          final adService = Get.find<AdService>();
+          // Only show navigation ads for certain routes to avoid spam
+          final allowedRoutes = [
+            '/home',
+            '/movies-viewing',
+            '/series-viewing',
+            '/favorites',
+            '/search',
+          ];
+          if (allowedRoutes.contains(routing.current)) {
+            // Small delay to ensure smooth navigation
+            Future.delayed(const Duration(milliseconds: 500), () {
+              adService.showNavigationAd();
+            });
+          }
+        }
+      },
       getPages: [
         GetPage(
           name: '/home',
-          page: () => const HomeScreen(),
+          page: () => HomeScreen(),
           transition: Transition.rightToLeft,
         ),
         GetPage(

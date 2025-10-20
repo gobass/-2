@@ -28,9 +28,7 @@ class AppTheme {
         color: Colors.white,
         elevation: 2,
         shadowColor: const Color(0x1A000000),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
 
       // Text Theme
@@ -65,18 +63,9 @@ class AppTheme {
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
-        bodyLarge: TextStyle(
-          color: Colors.black87,
-          fontSize: 16,
-        ),
-        bodyMedium: TextStyle(
-          color: Colors.black87,
-          fontSize: 14,
-        ),
-        bodySmall: TextStyle(
-          color: Colors.black54,
-          fontSize: 12,
-        ),
+        bodyLarge: TextStyle(color: Colors.black87, fontSize: 16),
+        bodyMedium: TextStyle(color: Colors.black87, fontSize: 14),
+        bodySmall: TextStyle(color: Colors.black54, fontSize: 12),
       ),
 
       // Button Themes
@@ -86,13 +75,8 @@ class AppTheme {
           foregroundColor: Colors.white,
           elevation: 2,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
 
@@ -101,13 +85,8 @@ class AppTheme {
           foregroundColor: Colors.red,
           side: const BorderSide(color: Colors.red, width: 2),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
 
@@ -131,7 +110,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.red, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         hintStyle: TextStyle(color: Colors.grey[500]),
         labelStyle: const TextStyle(color: Colors.black87),
       ),
@@ -179,9 +161,7 @@ class AppTheme {
         color: const Color(0xFF212121),
         elevation: 2,
         shadowColor: const Color(0x4D000000),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
 
       // Text Theme
@@ -216,18 +196,9 @@ class AppTheme {
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
-        bodyLarge: TextStyle(
-          color: Colors.white70,
-          fontSize: 16,
-        ),
-        bodyMedium: TextStyle(
-          color: Colors.white70,
-          fontSize: 14,
-        ),
-        bodySmall: TextStyle(
-          color: Colors.white54,
-          fontSize: 12,
-        ),
+        bodyLarge: TextStyle(color: Colors.white70, fontSize: 16),
+        bodyMedium: TextStyle(color: Colors.white70, fontSize: 14),
+        bodySmall: TextStyle(color: Colors.white54, fontSize: 12),
       ),
 
       // Button Themes
@@ -237,13 +208,8 @@ class AppTheme {
           foregroundColor: Colors.white,
           elevation: 2,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
 
@@ -252,13 +218,8 @@ class AppTheme {
           foregroundColor: Colors.red,
           side: const BorderSide(color: Colors.red, width: 2),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
 
@@ -282,7 +243,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.red, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         hintStyle: TextStyle(color: Colors.grey[500]),
         labelStyle: const TextStyle(color: Colors.white70),
       ),
@@ -303,6 +267,10 @@ class AppTheme {
     );
   }
 
+  // Primary and Secondary Colors
+  static Color get primaryColor => Colors.red;
+  static Color get secondaryColor => Colors.redAccent;
+
   // Movie App Specific Colors
   static const Color movieCardColor = Colors.grey;
   static const Color movieCardDarkColor = Color(0xFF1E1E1E);
@@ -313,27 +281,22 @@ class AppTheme {
   static const LinearGradient movieCardGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [
-      Color(0xFF2C2C2C),
-      Color(0xFF1E1E1E),
-    ],
+    colors: [Color(0xFF2C2C2C), Color(0xFF1E1E1E)],
   );
 
   // Text Styles for Movie App
   static TextStyle get movieTitleStyle => const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
-      );
+    fontSize: 16,
+    fontWeight: FontWeight.bold,
+    color: Colors.white,
+  );
 
-  static TextStyle get movieSubtitleStyle => TextStyle(
-        fontSize: 14,
-        color: Colors.grey[400],
-      );
+  static TextStyle get movieSubtitleStyle =>
+      TextStyle(fontSize: 14, color: Colors.grey[400]);
 
   static TextStyle get movieRatingStyle => const TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.bold,
-        color: Colors.red,
-      );
+    fontSize: 12,
+    fontWeight: FontWeight.bold,
+    color: Colors.red,
+  );
 }

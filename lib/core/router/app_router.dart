@@ -1,55 +1,73 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nashmi_tf/features/home/presentation/screens/home_screen.dart';
-import 'package:nashmi_tf/features/movie_details/movie_details_screen.dart';
-import 'package:nashmi_tf/features/search/search_screen.dart';
-import 'package:nashmi_tf/features/splash/splash_screen.dart';
-import 'package:nashmi_tf/features/view_all/view_all_screen.dart';
-import 'package:nashmi_tf/features/filter/filter_screen.dart';
 import 'package:nashmi_tf/features/main/main_navigation_screen.dart';
+import 'package:nashmi_tf/features/view_all/view_all_screen.dart';
+import 'package:nashmi_tf/features/search/search_screen.dart';
+import 'package:nashmi_tf/features/filter/filter_screen.dart';
+import 'package:nashmi_tf/features/admin/admin_screen.dart';
+import 'package:nashmi_tf/features/auth/login_screen.dart';
+import 'package:nashmi_tf/features/favorites/favorites_screen.dart';
+import 'package:nashmi_tf/features/movies_viewing/movies_viewing_screen.dart';
+import 'package:nashmi_tf/features/series_viewing/series_viewing_screen.dart';
+import 'package:nashmi_tf/screens/main_screen.dart';
 
 class AppRouter {
-  static const String splash = '/';
-  static const String home = '/home';
-  static const String movieDetails = '/movie-details';
-  static const String videoPlayer = '/video-player';
-  static const String search = '/search';
-  static const String viewAll = '/view-all';
-  static const String filter = '/filter';
-
-  static List<GetPage> routes = [
+  static final routes = [
     GetPage(
-      name: splash,
-      page: () => const SplashScreen(),
-      transition: Transition.fade,
-    ),
-    GetPage(
-      name: home,
-      page: () => const MainNavigationScreen(),
-      transition: Transition.fadeIn,
-    ),
-    GetPage(
-      name: movieDetails,
-      page: () {
-        // If movie object is passed in arguments, use it
-        final movieId = Get.parameters['movieId'] ?? '';
-        return MovieDetailsScreen(movieId: movieId);
-      },
+      name: '/home',
+      page: () => HomeScreen(),
       transition: Transition.rightToLeft,
     ),
     GetPage(
-      name: search,
-      page: () => const SearchScreen(),
-      transition: Transition.downToUp,
-    ),
-    GetPage(
-      name: viewAll,
-      page: () => const ViewAllScreen(title: '', category: ''),
+      name: '/main',
+      page: () => MainScreen(),
       transition: Transition.rightToLeft,
     ),
     GetPage(
-      name: filter,
-      page: () => const FilterScreen(),
+      name: '/view-all',
+      page: () => ViewAllScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: '/search',
+      page: () => SearchScreen(),
       transition: Transition.downToUp,
+    ),
+    GetPage(
+      name: '/filter',
+      page: () => FilterScreen(),
+      transition: Transition.downToUp,
+    ),
+    GetPage(
+      name: '/admin',
+      page: () => AdminScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: '/login',
+      page: () => LoginScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: '/favorites',
+      page: () => FavoritesScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: '/movies-viewing',
+      page: () => MoviesViewingScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: '/series-viewing',
+      page: () => SeriesViewingScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: '/main-screen',
+      page: () => MainScreen(),
+      transition: Transition.rightToLeft,
     ),
   ];
 }

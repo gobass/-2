@@ -108,6 +108,9 @@ class MovieListHorizontal extends StatelessWidget {
                           ),
                           errorWidget: (context, url, error) =>
                               _buildPlaceholder(),
+                          memCacheWidth:
+                              280, // Cache smaller version for performance
+                          memCacheHeight: 400,
                         )
                       : _buildPlaceholder(),
                 ),

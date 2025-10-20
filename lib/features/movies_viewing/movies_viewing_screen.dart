@@ -20,7 +20,7 @@ class MoviesViewingScreen extends StatefulWidget {
 
 class _MoviesViewingScreenState extends State<MoviesViewingScreen> {
   final SupabaseService _supabaseService = Get.find<SupabaseService>();
-  final AdService _adService = AdService();
+  late final AdService _adService;
 
   List<Map<String, dynamic>> _allMovies = [];
   List<Map<String, dynamic>> _featuredMovies = [];
@@ -36,8 +36,8 @@ class _MoviesViewingScreenState extends State<MoviesViewingScreen> {
   @override
   void initState() {
     super.initState();
+    _adService = Get.find<AdService>();
     _loadMovies();
-    _adService.initialize();
   }
 
   Future<void> _loadMovies() async {
@@ -156,74 +156,80 @@ class _MoviesViewingScreenState extends State<MoviesViewingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: _isLoading
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: Colors.red),
-                  SizedBox(height: 16),
-                  Text(
-                    'جاري تحميل الأفلام...',
-                    style: TextStyle(color: Colors.white70),
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF1A1A2E), // Dark blue
+              Color(0xFF16213E), // Darker blue
+              Color(0xFF0F3460), // Navy blue
+              Color(0xFF533483), // Purple accent
+            ],
+          ),
+        ),
+        child: _isLoading
+            ? _ModernLoadingView()
+            : CustomScrollView(
+                slivers: [
+                  // Hero Banner
+                  SliverToBoxAdapter(
+                    child: _HeroBanner(featuredMovies: _featuredMovies),
                   ),
+
+                  // Search Bar
+                  SliverToBoxAdapter(child: _SearchBar()),
+
+                  // Movies Sections with modern design
+                  if (egyptianMovies.isNotEmpty)
+                    _ModernMoviesSection(
+                      title: 'أفلام مصرية',
+                      movies: egyptianMovies,
+                      onMovieTap: _navigateToMovieDetails,
+                      icon: Icons.location_city,
+                      gradientColors: [Colors.orange, Colors.red],
+                    ),
+
+                  if (indianMovies.isNotEmpty)
+                    _ModernMoviesSection(
+                      title: 'أفلام هندية',
+                      movies: indianMovies,
+                      onMovieTap: _navigateToMovieDetails,
+                      icon: Icons.music_note,
+                      gradientColors: [Colors.pink, Colors.purple],
+                    ),
+
+                  if (foreignMovies.isNotEmpty)
+                    _ModernMoviesSection(
+                      title: 'أفلام أجنبية',
+                      movies: foreignMovies,
+                      onMovieTap: _navigateToMovieDetails,
+                      icon: Icons.language,
+                      gradientColors: [Colors.blue, Colors.indigo],
+                    ),
+
+                  if (recentlyAddedMovies.isNotEmpty)
+                    _ModernMoviesSection(
+                      title: 'مضاف حديثاً',
+                      movies: recentlyAddedMovies,
+                      onMovieTap: _navigateToMovieDetails,
+                      icon: Icons.new_releases,
+                      gradientColors: [Colors.green, Colors.teal],
+                    ),
+
+                  // Bottom spacing
+                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
                 ],
               ),
-            )
-          : CustomScrollView(
-              slivers: [
-                // Hero Banner
-                SliverToBoxAdapter(
-                  child: _HeroBanner(featuredMovies: _featuredMovies),
-                ),
-
-                // Search Bar
-                SliverToBoxAdapter(child: _SearchBar()),
-
-                // Movies Sections
-                if (egyptianMovies.isNotEmpty)
-                  _MoviesSection(
-                    title: 'أفلام مصرية',
-                    movies: egyptianMovies,
-                    onMovieTap: _navigateToMovieDetails,
-                  ),
-
-                if (indianMovies.isNotEmpty)
-                  _MoviesSection(
-                    title: 'أفلام هندية',
-                    movies: indianMovies,
-                    onMovieTap: _navigateToMovieDetails,
-                  ),
-
-                if (foreignMovies.isNotEmpty)
-                  _MoviesSection(
-                    title: 'أفلام أجنبية',
-                    movies: foreignMovies,
-                    onMovieTap: _navigateToMovieDetails,
-                  ),
-
-                if (recentlyAddedMovies.isNotEmpty)
-                  _MoviesSection(
-                    title: 'مضاف حديثاً',
-                    movies: recentlyAddedMovies,
-                    onMovieTap: _navigateToMovieDetails,
-                  ),
-
-                // Bottom spacing
-                const SliverToBoxAdapter(child: SizedBox(height: 100)),
-              ],
-            ),
+      ),
 
       // Banner Ad at bottom
-      bottomNavigationBar:
-          _adService.isBannerAdLoaded && _adService.bannerAd != null
-          ? Container(
-              height: _adService.bannerAd!.size.height.toDouble(),
-              width: double.infinity,
-              child: AdWidget(ad: _adService.bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: Container(
+        height: 60,
+        child: _adService.getBannerAdWidget(),
+      ),
     );
   }
 }
@@ -335,11 +341,11 @@ class _HeroBannerState extends State<_HeroBanner> {
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
-                              shadows: [
+                              shadows: const [
                                 Shadow(
                                   color: Colors.black,
                                   blurRadius: 10,
-                                  offset: Offset(0, 2),
+                                  offset: const Offset(0, 2),
                                 ),
                               ],
                             ),
@@ -357,7 +363,7 @@ class _HeroBannerState extends State<_HeroBanner> {
                                 Shadow(
                                   color: Colors.black,
                                   blurRadius: 5,
-                                  offset: Offset(0, 1),
+                                  offset: const Offset(0, 1),
                                 ),
                               ],
                             ),
@@ -487,76 +493,279 @@ class _SearchBar extends StatelessWidget {
   }
 }
 
-// Movies Section
-class _MoviesSection extends StatelessWidget {
+// Modern Loading View
+class _ModernLoadingView extends StatefulWidget {
+  const _ModernLoadingView();
+
+  @override
+  State<_ModernLoadingView> createState() => _ModernLoadingViewState();
+}
+
+class _ModernLoadingViewState extends State<_ModernLoadingView>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _rotationAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
+    );
+
+    _rotationAnimation = Tween<double>(begin: 0.0, end: 2 * pi).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.linear),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Animated Movie Icon
+            AnimatedBuilder(
+              animation: _animationController,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _scaleAnimation.value,
+                  child: Transform.rotate(
+                    angle: _rotationAnimation.value,
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Colors.red, Colors.pink, Colors.purple],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.red.withOpacity(0.3),
+                            blurRadius: 20,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.movie,
+                        color: Colors.white,
+                        size: 64,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 32),
+
+            // Loading Text with Gradient
+            AnimatedBuilder(
+              animation: _animationController,
+              builder: (context, child) {
+                return FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      colors: [Colors.red, Colors.pink, Colors.purple],
+                    ).createShader(bounds),
+                    child: const Text(
+                      'جاري تحميل الأفلام...',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            // Modern Progress Indicator
+            Container(
+              width: 200,
+              height: 6,
+              decoration: BoxDecoration(
+                color: Colors.grey[800],
+                borderRadius: BorderRadius.circular(3),
+              ),
+              child: AnimatedBuilder(
+                animation: _animationController,
+                builder: (context, child) {
+                  return FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: _animationController.value,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Colors.red, Colors.pink, Colors.purple],
+                        ),
+                        borderRadius: BorderRadius.circular(3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.red.withOpacity(0.5),
+                            blurRadius: 8,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Subtitle
+            AnimatedBuilder(
+              animation: _animationController,
+              builder: (context, child) {
+                return FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Text(
+                    'يرجى الانتظار قليلاً',
+                    style: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: 14,
+                      fontWeight: FontWeight.w300,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Modern Movies Section
+class _ModernMoviesSection extends StatelessWidget {
   final String title;
   final List<Map<String, dynamic>> movies;
   final Function(Map<String, dynamic>) onMovieTap;
+  final IconData icon;
+  final List<Color> gradientColors;
 
-  const _MoviesSection({
+  _ModernMoviesSection({
     required this.title,
     required this.movies,
     required this.onMovieTap,
+    required this.icon,
+    required this.gradientColors,
   });
 
   @override
   Widget build(BuildContext context) {
     return SliverToBoxAdapter(
       child: Container(
-        margin: const EdgeInsets.only(bottom: 24),
+        margin: const EdgeInsets.only(bottom: 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Modern Section Header with Gradient
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey[900]?.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[800]!, width: 1),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: gradientColors,
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: gradientColors[0].withOpacity(0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
               child: Row(
                 children: [
+                  // Animated Icon Container
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 1,
+                      ),
                     ),
-                    child: const Icon(Icons.movie, color: Colors.red, size: 20),
+                    child: Icon(icon, color: Colors.white, size: 24),
                   ),
-                  const SizedBox(width: 12),
+
+                  const SizedBox(width: 16),
+
+                  // Section Title with Shadow
                   Expanded(
                     child: Text(
                       title,
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                         shadows: [
                           Shadow(
-                            color: Colors.black.withOpacity(0.5),
-                            blurRadius: 4,
+                            color: Color.fromRGBO(0, 0, 0, 0.3),
+                            blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
                         ],
                       ),
                     ),
                   ),
+
+                  // Count Badge with Gradient
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+                      horizontal: 12,
+                      vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 1,
+                      ),
                     ),
                     child: Text(
                       '${movies.length}',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 12,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -564,17 +773,30 @@ class _MoviesSection extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+
+            const SizedBox(height: 20),
+
+            // Movies List with Glass Effect
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.grey[900]?.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[800]!, width: 1),
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.1),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               child: SizedBox(
-                height: 280,
+                height: 300,
                 child: MovieListHorizontal(
                   movies: movies.map((m) => Movie.fromJson(m)).toList(),
                 ),

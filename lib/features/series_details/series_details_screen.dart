@@ -74,29 +74,78 @@ class _SeriesDetailsScreenState extends State<SeriesDetailsScreen> {
     if (_series == null) return;
 
     try {
-      // For now, create sample episodes since the method doesn't exist
-      // This should be replaced with actual episode loading from Supabase
+      final supabaseService = Get.find<SupabaseService>();
+      final episodes = await supabaseService.getEpisodesBySeries(_series!.id);
+
+      if (episodes.isNotEmpty) {
+        setState(() {
+          _episodes = episodes
+              .map(
+                (episode) => {
+                  'id': episode['id'],
+                  'title':
+                      episode['title'] ??
+                      'الحلقة ${episode['episodeNumber'] ?? 'غير محدد'}',
+                  'description': episode['description'] ?? 'وصف الحلقة',
+                  'video_url': episode['videoUrl'] ?? episode['videoURL'] ?? '',
+                  'episodeNumber': episode['episodeNumber'] ?? 0,
+                  'duration': episode['duration'] ?? '',
+                },
+              )
+              .toList();
+        });
+        print('🎬 Loaded ${episodes.length} episodes from database');
+      } else {
+        // Fallback to sample episodes if no episodes found in database
+        setState(() {
+          _episodes = [
+            {
+              'title': 'الحلقة 1',
+              'description': 'البداية...',
+              'video_url': _series!.videoURL,
+              'episodeNumber': 1,
+            },
+            {
+              'title': 'الحلقة 2',
+              'description': 'تطور الأحداث...',
+              'video_url': _series!.videoURL,
+              'episodeNumber': 2,
+            },
+            {
+              'title': 'الحلقة 3',
+              'description': 'الذروة...',
+              'video_url': _series!.videoURL,
+              'episodeNumber': 3,
+            },
+          ];
+        });
+        print('🎬 No episodes found in database, using sample episodes');
+      }
+    } catch (e) {
+      print('Error loading episodes: $e');
+      // Fallback to sample episodes on error
       setState(() {
         _episodes = [
           {
             'title': 'الحلقة 1',
             'description': 'البداية...',
             'video_url': _series!.videoURL,
+            'episodeNumber': 1,
           },
           {
             'title': 'الحلقة 2',
             'description': 'تطور الأحداث...',
             'video_url': _series!.videoURL,
+            'episodeNumber': 2,
           },
           {
             'title': 'الحلقة 3',
             'description': 'الذروة...',
             'video_url': _series!.videoURL,
+            'episodeNumber': 3,
           },
         ];
       });
-    } catch (e) {
-      print('Error loading episodes: $e');
     }
   }
 

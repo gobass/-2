@@ -11,7 +11,8 @@ class SupabaseService extends GetxService {
 
   // Supabase configuration
   static const String supabaseUrl = 'https://ohhomkhnzsozopwwnmfw.supabase.co';
-  static String get supabaseAnonKey => const String.fromEnvironment('SUPABASE_KEY', defaultValue: '');
+  static String get supabaseAnonKey =>
+      const String.fromEnvironment('SUPABASE_KEY', defaultValue: '');
 
   Future<void> initialize() async {
     try {
@@ -20,7 +21,9 @@ class SupabaseService extends GetxService {
       if (!kIsWeb) {
         // Try to read from assets first (mobile)
         try {
-          final configContent = await rootBundle.loadString('assets/supabase_config.json');
+          final configContent = await rootBundle.loadString(
+            'assets/supabase_config.json',
+          );
           final config = jsonDecode(configContent);
           anonKey = config['supabaseAnonKey'];
           print('🔑 Loaded Supabase key from assets');
@@ -32,13 +35,17 @@ class SupabaseService extends GetxService {
       } else {
         // On web, try to load from assets or environment variable
         try {
-          final configContent = await rootBundle.loadString('assets/supabase_config.json');
+          final configContent = await rootBundle.loadString(
+            'assets/supabase_config.json',
+          );
           final config = jsonDecode(configContent);
           anonKey = config['supabaseAnonKey'];
           print('🔑 Loaded Supabase key from assets');
         } catch (_) {
           anonKey = supabaseAnonKey;
-          print('🔑 Loaded Supabase key from environment variable (web fallback)');
+          print(
+            '🔑 Loaded Supabase key from environment variable (web fallback)',
+          );
         }
       }
 
@@ -46,13 +53,12 @@ class SupabaseService extends GetxService {
       print('🔑 Supabase Key Length: ${anonKey.length}');
 
       if (anonKey.isEmpty) {
-        throw Exception('Supabase key is not configured. Please check supabase_config.json or SUPABASE_KEY environment variable');
+        throw Exception(
+          'Supabase key is not configured. Please check supabase_config.json or SUPABASE_KEY environment variable',
+        );
       }
 
-      await Supabase.initialize(
-        url: supabaseUrl,
-        anonKey: anonKey,
-      );
+      await Supabase.initialize(url: supabaseUrl, anonKey: anonKey);
 
       print('✅ Supabase initialized successfully');
     } catch (e) {
@@ -70,7 +76,10 @@ class SupabaseService extends GetxService {
     }
   }
 
-  Future<void> updateMovie(String movieId, Map<String, dynamic> movieData) async {
+  Future<void> updateMovie(
+    String movieId,
+    Map<String, dynamic> movieData,
+  ) async {
     try {
       await _supabase.from('movies').update(movieData).eq('id', movieId);
     } catch (e) {
@@ -105,27 +114,37 @@ class SupabaseService extends GetxService {
       }
 
       // Validate and sanitize URLs, and map field names from admin panel format
-      final sanitizedMovies = response.map((movie) {
-        // Ensure movie is not null
-        if (movie == null) return null;
+      final sanitizedMovies = response
+          .map((movie) {
+            // Ensure movie is not null
+            if (movie == null) return null;
 
-        print('Processing movie: ${movie['title'] ?? 'Unknown'}'); // Debug print
+            print(
+              'Processing movie: ${movie['title'] ?? 'Unknown'}',
+            ); // Debug print
 
-        return {
-          'id': movie['id'] ?? '',
-          'title': movie['title'] ?? 'عنوان غير معروف',
-          'description': movie['description'] ?? 'وصف غير متوفر',
-          'categories': movie['categories'] ?? [],
-          'imageURL': _sanitizeUrl(movie['posterUrl'] ?? movie['imageURL'] ?? ''),
-          'videoURL': _sanitizeUrl(movie['videoUrl'] ?? movie['videoURL'] ?? ''),
-          'rating': movie['rating'],
-          'year': movie['year'],
-          'duration': movie['duration'],
-          'isTrending': movie['isTrending'] ?? false,
-          'isSeries': movie['isSeries'] ?? false,
-          'createdAt': movie['createdat'] ?? DateTime.now().toIso8601String(),
-        };
-      }).whereType<Map<String, dynamic>>().toList(); // Filter out null movies
+            return {
+              'id': movie['id'] ?? '',
+              'title': movie['title'] ?? 'عنوان غير معروف',
+              'description': movie['description'] ?? 'وصف غير متوفر',
+              'categories': movie['categories'] ?? [],
+              'imageURL': _sanitizeImageUrl(
+                movie['posterUrl'] ?? movie['imageURL'] ?? '',
+              ),
+              'videoURL': _sanitizeUrl(
+                movie['videoUrl'] ?? movie['videoURL'] ?? '',
+              ),
+              'rating': movie['rating'],
+              'year': movie['year'],
+              'duration': movie['duration'],
+              'isTrending': movie['isTrending'] ?? false,
+              'isSeries': movie['isSeries'] ?? false,
+              'createdAt':
+                  movie['createdat'] ?? DateTime.now().toIso8601String(),
+            };
+          })
+          .whereType<Map<String, dynamic>>()
+          .toList(); // Filter out null movies
 
       return sanitizedMovies;
     } catch (e) {
@@ -148,7 +167,7 @@ class SupabaseService extends GetxService {
       // Validate and sanitize URLs
       return {
         ...response,
-        'imageURL': _sanitizeUrl(response['imageURL'] ?? ''),
+        'imageURL': _sanitizeImageUrl(response['imageURL'] ?? ''),
         'videoURL': _sanitizeUrl(response['videoURL'] ?? ''),
       };
     } catch (e) {
@@ -166,7 +185,10 @@ class SupabaseService extends GetxService {
     }
   }
 
-  Future<void> updateSeries(String seriesId, Map<String, dynamic> seriesData) async {
+  Future<void> updateSeries(
+    String seriesId,
+    Map<String, dynamic> seriesData,
+  ) async {
     try {
       await _supabase.from('movies').update(seriesData).eq('id', seriesId);
     } catch (e) {
@@ -200,25 +222,33 @@ class SupabaseService extends GetxService {
       }
 
       // Sanitize URLs and map admin panel field names to app field names
-      final sanitizedSeries = response.map((series) {
-        // Ensure series is not null
-        if (series == null) return null;
+      final sanitizedSeries = response
+          .map((series) {
+            // Ensure series is not null
+            if (series == null) return null;
 
-        return {
-          'id': series['id'] ?? '',
-          'title': series['title'] ?? 'عنوان غير معروف',
-          'description': series['description'] ?? 'وصف غير متوفر',
-          'categories': series['categories'] ?? [],
-          'imageURL': _sanitizeUrl(series['posterUrl'] ?? series['imageURL'] ?? ''),
-          'videoURL': _sanitizeUrl(series['videoUrl'] ?? series['videoURL'] ?? ''),
-          'rating': series['rating'],
-          'year': series['year'],
-          'duration': series['duration'],
-          'isTrending': series['isTrending'] ?? false,
-          'isSeries': series['isSeries'] ?? true,
-          'createdAt': series['createdat'] ?? DateTime.now().toIso8601String(),
-        };
-      }).whereType<Map<String, dynamic>>().toList(); // Filter out null series
+            return {
+              'id': series['id'] ?? '',
+              'title': series['title'] ?? 'عنوان غير معروف',
+              'description': series['description'] ?? 'وصف غير متوفر',
+              'categories': series['categories'] ?? [],
+              'imageURL': _sanitizeImageUrl(
+                series['posterUrl'] ?? series['imageURL'] ?? '',
+              ),
+              'videoURL': _sanitizeUrl(
+                series['videoUrl'] ?? series['videoURL'] ?? '',
+              ),
+              'rating': series['rating'],
+              'year': series['year'],
+              'duration': series['duration'],
+              'isTrending': series['isTrending'] ?? false,
+              'isSeries': series['isSeries'] ?? true,
+              'createdAt':
+                  series['createdat'] ?? DateTime.now().toIso8601String(),
+            };
+          })
+          .whereType<Map<String, dynamic>>()
+          .toList(); // Filter out null series
 
       return sanitizedSeries;
     } catch (e) {
@@ -245,13 +275,15 @@ class SupabaseService extends GetxService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getEpisodesBySeries(String seriesId) async {
+  Future<List<Map<String, dynamic>>> getEpisodesBySeries(
+    String seriesId,
+  ) async {
     try {
       final response = await _supabase
           .from('episodes')
           .select()
-          .eq('seriesId', seriesId)
-          .order('episodeNumber', ascending: true);
+          .eq('series_id', seriesId)
+          .order('episode_number', ascending: true);
       return response ?? [];
     } catch (e) {
       print('Error loading episodes: $e');
@@ -316,9 +348,7 @@ class SupabaseService extends GetxService {
   // Statistics methods - simplified approach
   Future<int> getMoviesCount() async {
     try {
-      final response = await _supabase
-          .from('movies')
-          .select();
+      final response = await _supabase.from('movies').select();
       return response?.length ?? 0;
     } catch (e) {
       print('Error getting movies count: $e');
@@ -328,9 +358,7 @@ class SupabaseService extends GetxService {
 
   Future<int> getSeriesCount() async {
     try {
-      final response = await _supabase
-          .from('series')
-          .select();
+      final response = await _supabase.from('series').select();
       return response?.length ?? 0;
     } catch (e) {
       print('Error getting series count: $e');
@@ -357,7 +385,9 @@ class SupabaseService extends GetxService {
   // File upload methods
   Future<String> uploadImage(String path, List<int> bytes) async {
     try {
-      final response = await _supabase.storage.from('images').uploadBinary(path, Uint8List.fromList(bytes));
+      final response = await _supabase.storage
+          .from('images')
+          .uploadBinary(path, Uint8List.fromList(bytes));
       final publicUrl = _supabase.storage.from('images').getPublicUrl(path);
       return publicUrl;
     } catch (e) {
@@ -367,7 +397,9 @@ class SupabaseService extends GetxService {
 
   Future<String> uploadVideo(String path, List<int> bytes) async {
     try {
-      final response = await _supabase.storage.from('videos').uploadBinary(path, Uint8List.fromList(bytes));
+      final response = await _supabase.storage
+          .from('videos')
+          .uploadBinary(path, Uint8List.fromList(bytes));
       final publicUrl = _supabase.storage.from('videos').getPublicUrl(path);
       return publicUrl;
     } catch (e) {
@@ -381,13 +413,29 @@ class SupabaseService extends GetxService {
       // Since categories are stored as arrays in movies table, we'll return static categories
       // In a real app, you might want to extract unique categories from movies
       return [
-        {'id': 'action', 'name': 'أكشن', 'description': 'أفلام الإثارة والأكشن'},
-        {'id': 'comedy', 'name': 'كوميديا', 'description': 'أفلام مضحكة ومسلية'},
+        {
+          'id': 'action',
+          'name': 'أكشن',
+          'description': 'أفلام الإثارة والأكشن',
+        },
+        {
+          'id': 'comedy',
+          'name': 'كوميديا',
+          'description': 'أفلام مضحكة ومسلية',
+        },
         {'id': 'drama', 'name': 'دراما', 'description': 'أفلام درامية مؤثرة'},
         {'id': 'horror', 'name': 'رعب', 'description': 'أفلام الرعب والتشويق'},
         {'id': 'romance', 'name': 'رومانسية', 'description': 'أفلام رومانسية'},
-        {'id': 'scifi', 'name': 'خيال علمي', 'description': 'أفلام الخيال العلمي'},
-        {'id': 'thriller', 'name': 'إثارة', 'description': 'أفلام الإثارة والتشويق'},
+        {
+          'id': 'scifi',
+          'name': 'خيال علمي',
+          'description': 'أفلام الخيال العلمي',
+        },
+        {
+          'id': 'thriller',
+          'name': 'إثارة',
+          'description': 'أفلام الإثارة والتشويق',
+        },
       ];
     } catch (e) {
       print('Error getting categories: $e');
@@ -410,6 +458,17 @@ class SupabaseService extends GetxService {
     final trimmedUrl = url.trim();
     if (!_isValidUrl(trimmedUrl)) {
       return url; // Return original URL if invalid to avoid emptying valid but unusual URLs
+    }
+    return trimmedUrl;
+  }
+
+  String _sanitizeImageUrl(String url) {
+    final trimmedUrl = url.trim();
+    if (trimmedUrl.isEmpty) {
+      return 'https://via.placeholder.com/300x450/333333/FFFFFF?text=No+Image';
+    }
+    if (!_isValidUrl(trimmedUrl)) {
+      return 'https://via.placeholder.com/300x450/333333/FFFFFF?text=Invalid+URL';
     }
     return trimmedUrl;
   }
@@ -442,7 +501,11 @@ class SupabaseService extends GetxService {
       final response = await _supabase
           .from('app_config')
           .select('config_key, config_value');
-      return Map.fromEntries(response.map((item) => MapEntry(item['config_key'], item['config_value'])));
+      return Map.fromEntries(
+        response.map(
+          (item) => MapEntry(item['config_key'], item['config_value']),
+        ),
+      );
     } catch (e) {
       print('Error getting app config: $e');
       return {};
@@ -467,7 +530,10 @@ class SupabaseService extends GetxService {
     try {
       await _supabase
           .from('app_config')
-          .update({'config_value': value, 'updated_at': DateTime.now().toIso8601String()})
+          .update({
+            'config_value': value,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
           .eq('config_key', key);
     } catch (e) {
       throw Exception('Failed to update config value: $e');

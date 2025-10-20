@@ -20,11 +20,12 @@ class _SearchScreenState extends State<SearchScreen> {
   List<String> _searchHistory = [];
   bool _isLoading = true;
   bool _isSearching = false;
-  final AdService _adService = AdService();
+  late final AdService _adService;
 
   @override
   void initState() {
     super.initState();
+    _adService = Get.find<AdService>();
     _loadMovies();
   }
 
@@ -39,23 +40,27 @@ class _SearchScreenState extends State<SearchScreen> {
       // final adsData = await supabaseService.getAllAds();
 
       final movies = moviesData.map((data) => Movie.fromJson(data)).toList();
-      final series = seriesData.map((data) => Movie(
-        id: data['id']?.toString() ?? '',
-        title: data['title'] ?? '',
-        description: data['description'] ?? '',
-        imageURL: data['posterUrl'] ?? '',
-        videoURL: data['video_url'] ?? '', // Fixed field name for series
-        category: (data['categories'] as List?)?.first ?? '',
-        type: 'series',
-        viewCount: data['views'] ?? 0,
-        rating: (data['rating'] ?? 0).toDouble(),
-        year: data['year']?.toString(),
-        duration: data['duration']?.toString(),
-        episodeCount: data['total_episodes'],
-        createdAt: data['createdat'] != null
-          ? DateTime.parse(data['createdat'])
-          : DateTime.now(),
-      )).toList();
+      final series = seriesData
+          .map(
+            (data) => Movie(
+              id: data['id']?.toString() ?? '',
+              title: data['title'] ?? '',
+              description: data['description'] ?? '',
+              imageURL: data['posterUrl'] ?? '',
+              videoURL: data['video_url'] ?? '', // Fixed field name for series
+              category: (data['categories'] as List?)?.first ?? '',
+              type: 'series',
+              viewCount: data['views'] ?? 0,
+              rating: (data['rating'] ?? 0).toDouble(),
+              year: data['year']?.toString(),
+              duration: data['duration']?.toString(),
+              episodeCount: data['total_episodes'],
+              createdAt: data['createdat'] != null
+                  ? DateTime.parse(data['createdat'])
+                  : DateTime.now(),
+            ),
+          )
+          .toList();
 
       _allMovies = [...movies, ...series];
       // Removed ads from search results as per user request
@@ -80,11 +85,11 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     setState(() => _isSearching = true);
-    
+
     final filteredList = _allMovies.where((movie) {
       return movie.title.toLowerCase().contains(query.toLowerCase()) ||
-             movie.description.toLowerCase().contains(query.toLowerCase()) ||
-             movie.category.toLowerCase().contains(query.toLowerCase());
+          movie.description.toLowerCase().contains(query.toLowerCase()) ||
+          movie.category.toLowerCase().contains(query.toLowerCase());
     }).toList();
 
     setState(() {
@@ -145,48 +150,53 @@ class _SearchScreenState extends State<SearchScreen> {
               decoration: InputDecoration(
                 hintText: 'ابحث عن فيلم أو مسلسل...',
                 hintStyle: TextStyle(color: Colors.grey[400]),
-                prefixIcon: _isSearching 
-                  ? const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                prefixIcon: _isSearching
+                    ? const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.red,
+                            ),
+                          ),
                         ),
-                      ),
-                    )
-                  : const Icon(Icons.search, color: Colors.red),
+                      )
+                    : const Icon(Icons.search, color: Colors.red),
                 suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear, color: Colors.grey),
-                      onPressed: () {
-                        _searchController.clear();
-                        _searchMovies('');
-                      },
-                    )
-                  : null,
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.grey),
+                        onPressed: () {
+                          _searchController.clear();
+                          _searchMovies('');
+                        },
+                      )
+                    : null,
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
               ),
               onChanged: _searchMovies,
             ),
           ),
-          
+
           // Results/Content
           Expanded(
             child: _isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
-                  ),
-                )
-              : _searchController.text.isEmpty
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                    ),
+                  )
+                : _searchController.text.isEmpty
                 ? _buildSearchHistory()
                 : _filteredMovies.isEmpty
-                  ? _buildNoResults()
-                  : _buildSearchResults(),
+                ? _buildNoResults()
+                : _buildSearchResults(),
           ),
         ],
       ),
@@ -199,18 +209,11 @@ class _SearchScreenState extends State<SearchScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.search,
-              color: Colors.grey[600],
-              size: 64,
-            ),
+            Icon(Icons.search, color: Colors.grey[600], size: 64),
             const SizedBox(height: 16),
             Text(
               'ابدأ البحث عن أفلامك المفضلة',
-              style: TextStyle(
-                color: Colors.grey[400],
-                fontSize: 18,
-              ),
+              style: TextStyle(color: Colors.grey[400], fontSize: 18),
             ),
           ],
         ),
@@ -250,10 +253,7 @@ class _SearchScreenState extends State<SearchScreen> {
               final query = _searchHistory[index];
               return ListTile(
                 leading: const Icon(Icons.history, color: Colors.grey),
-                title: Text(
-                  query,
-                  style: const TextStyle(color: Colors.white),
-                ),
+                title: Text(query, style: const TextStyle(color: Colors.white)),
                 trailing: IconButton(
                   icon: const Icon(Icons.north_west, color: Colors.grey),
                   onPressed: () {
@@ -278,11 +278,7 @@ class _SearchScreenState extends State<SearchScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.movie_filter_outlined,
-            color: Colors.grey[600],
-            size: 64,
-          ),
+          Icon(Icons.movie_filter_outlined, color: Colors.grey[600], size: 64),
           const SizedBox(height: 16),
           const Text(
             'لا توجد نتائج',
@@ -295,10 +291,7 @@ class _SearchScreenState extends State<SearchScreen> {
           const SizedBox(height: 8),
           Text(
             'جرب البحث بكلمات مختلفة',
-            style: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 16,
-            ),
+            style: TextStyle(color: Colors.grey[400], fontSize: 16),
           ),
         ],
       ),
@@ -331,9 +324,7 @@ class _SearchScreenState extends State<SearchScreen> {
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: MovieListHorizontal(
-              movies: _filteredMovies,
-            ),
+            child: MovieListHorizontal(movies: _filteredMovies),
           ),
         ),
       ],

@@ -29,6 +29,10 @@ dependencies:
   chewie: ^1.7.5
   youtube_player_flutter: ^9.1.2
   flutter_inappwebview: ^6.1.5
+  universal_platform: ^1.0.0+1
+  webview_flutter: ^4.8.0
+  webview_flutter_android: ^3.16.4
+  webview_flutter_wkwebview: ^3.13.1
 
   # Firebase - Updated to compatible versions
   firebase_core: ^3.10.0
@@ -57,8 +61,6 @@ flutter:
   # Assets
   assets:
     - assets/images/
-    - assets/icons/
-    - assets/fonts/
     - assets/supabase_config.json
 
 flutter_launcher_icons:

@@ -5,8 +5,13 @@ import 'package:chewie/chewie.dart';
 import 'package:flutter/foundation.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'dart:io' show Platform;
+import 'package:universal_platform/universal_platform.dart';
 import 'dart:async';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:flutter_inappwebview_platform_interface/flutter_inappwebview_platform_interface.dart';
+
 import 'dailymotion_player.dart';
 import '../../services/ad_service.dart';
 import '../../services/continuous_watching_service.dart';
@@ -32,8 +37,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   bool _isLoading = true;
   bool _isYouTubeVideo = false;
   bool _isDailymotionVideo = false;
+  bool _isIframeVideo = false;
   final AdService _adService = AdService();
-  final ContinuousWatchingService _continuousWatchingService = ContinuousWatchingService.instance;
+  final ContinuousWatchingService _continuousWatchingService =
+      ContinuousWatchingService.instance;
 
   Timer? _progressTimer;
   Duration? _savedPosition;
@@ -43,10 +50,25 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   void initState() {
     super.initState();
     // Check if it's a YouTube video
-    _isYouTubeVideo = widget.videoUrl.contains('youtube.com') || widget.videoUrl.contains('youtu.be');
+    _isYouTubeVideo =
+        widget.videoUrl.contains('youtube.com') ||
+        widget.videoUrl.contains('youtu.be');
 
     // Check if it's a Dailymotion video
-    _isDailymotionVideo = widget.videoUrl.contains('dailymotion.com') || widget.videoUrl.contains('dai.ly');
+    _isDailymotionVideo =
+        widget.videoUrl.contains('dailymotion.com') ||
+        widget.videoUrl.contains('dai.ly');
+
+    // Check if it's an iframe video (like VK Video)
+    _isIframeVideo =
+        widget.videoUrl.contains('<iframe') ||
+        widget.videoUrl.contains('vkvideo.ru') ||
+        widget.videoUrl.contains('video_ext.php') ||
+        widget.videoUrl.contains('my.mail.ru') ||
+        widget.videoUrl.contains('cdn62.my.mail.ru');
+
+    // WebView platform is now initialized in main.dart
+    // No need to initialize here
 
     // Initialize video player
     if (_isYouTubeVideo) {
@@ -54,14 +76,26 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     } else if (_isDailymotionVideo) {
       // Dailymotion handled in build method
       _isLoading = false;
+    } else if (_isIframeVideo) {
+      // Iframe videos handled in build method
+      _isLoading = false;
     } else {
-      _initializePlayer();
+      if (widget.videoUrl.isNotEmpty) {
+        _initializePlayer();
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   Future<String> _resolveShortUrl(String url) async {
     try {
-      final response = await http.head(Uri.parse(url), headers: {'User-Agent': 'Mozilla/5.0'});
+      final response = await http.head(
+        Uri.parse(url),
+        headers: {'User-Agent': 'Mozilla/5.0'},
+      );
       if (response.isRedirect && response.headers.containsKey('location')) {
         return response.headers['location']!;
       }
@@ -75,8 +109,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   Future<void> _initializePlayer() async {
     try {
       // Check if running on unsupported platforms
-      if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
-        print('🎬 Desktop platform detected - showing fallback message');
+      if (!kIsWeb && !UniversalPlatform.isAndroid && !UniversalPlatform.isIOS) {
+        print('🎬 Unsupported platform detected - showing fallback message');
         setState(() {
           _isLoading = false;
         });
@@ -85,7 +119,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       }
 
       // Validate URL
-      if (widget.videoUrl.isEmpty || !Uri.tryParse(widget.videoUrl)!.isAbsolute) {
+      if (widget.videoUrl.isEmpty ||
+          !Uri.tryParse(widget.videoUrl)!.isAbsolute) {
         throw Exception('رابط الفيديو غير صحيح أو فارغ');
       }
 
@@ -99,19 +134,30 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       // Check if URL is a direct video file
       final uri = Uri.parse(videoUrlToUse);
       final path = uri.path.toLowerCase();
-      final isVideoFile = path.endsWith('.mp4') || path.endsWith('.webm') || path.endsWith('.ogg') ||
-                         path.endsWith('.avi') || path.endsWith('.mov') || path.endsWith('.mkv');
+      final isVideoFile =
+          path.endsWith('.mp4') ||
+          path.endsWith('.webm') ||
+          path.endsWith('.ogg') ||
+          path.endsWith('.avi') ||
+          path.endsWith('.mov') ||
+          path.endsWith('.mkv');
 
       if (!isVideoFile) {
-        throw Exception('تنسيق الفيديو غير مدعوم. يرجى استخدام رابط فيديو مباشر');
+        throw Exception(
+          'تنسيق الفيديو غير مدعوم. يرجى استخدام رابط فيديو مباشر',
+        );
       }
 
-      _videoController = VideoPlayerController.networkUrl(Uri.parse(videoUrlToUse));
+      _videoController = VideoPlayerController.networkUrl(
+        Uri.parse(videoUrlToUse),
+      );
 
       // Set timeout for initialization
       await _videoController!.initialize().timeout(
         const Duration(seconds: 60),
-        onTimeout: () => throw Exception('انتهت مهلة تحميل الفيديو - تحقق من اتصال الإنترنت'),
+        onTimeout: () => throw Exception(
+          'انتهت مهلة تحميل الفيديو - تحقق من اتصال الإنترنت',
+        ),
       );
 
       // Check if video was initialized successfully
@@ -124,7 +170,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       print('🔊 Video volume set successfully');
 
       // Debug audio information
-      print('🔊 Video controller initialized: ${_videoController!.value.isInitialized}');
+      print(
+        '🔊 Video controller initialized: ${_videoController!.value.isInitialized}',
+      );
       print('🔊 Video duration: ${_videoController!.value.duration}');
       print('🔊 Video size: ${_videoController!.value.size}');
       print('🔊 Platform: ${Platform.operatingSystem}');
@@ -189,26 +237,26 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
       // Show interstitial ad when video starts (with 50% probability)
       final random = DateTime.now().millisecondsSinceEpoch % 10;
-      print('🎬 Video player - random number: $random, should show interstitial: ${_adService.shouldShowInterstitial()}');
+      print(
+        '🎬 Video player - random number: $random, should show interstitial: ${_adService.shouldShowInterstitial()}',
+      );
 
-      if (random < 5 && _adService.shouldShowInterstitial()) { // 50% chance
-        print('🎬 Showing interstitial ad before video playback');
-        _adService.showInterstitialAd(() {
-          print('🎬 Interstitial ad dismissed, continuing video playback');
-          _checkForSavedPosition();
-          _startProgressTimer();
-          setState(() {
-            _isLoading = false;
-          });
-        });
-      } else {
-        print('🎬 No interstitial ad shown, continuing video playback');
+      // Start video ad timer for 5-minute intervals during playback
+      _adService.startVideoAdTimer();
+
+      // Always try to show rewarded ad first, if not available, continue with video
+      print('🎬 Attempting to show rewarded ad before video playback');
+      _adService.showRewardedAd((rewardEarned) {
+        print(
+          '🎬 Rewarded ad result: ${rewardEarned ? 'earned' : 'not earned'}',
+        );
+        // Continue with video playback regardless of reward result
         _checkForSavedPosition();
         _startProgressTimer();
         setState(() {
           _isLoading = false;
         });
-      }
+      });
     } catch (e) {
       print('Video initialization error: $e');
       setState(() {
@@ -257,7 +305,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   void _showDesktopFallback() {
     Get.snackbar(
       'تشغيل الفيديو غير مدعوم',
-      'مشغل الفيديو لا يعمل على أجهزة سطح المكتب. يرجى استخدام الهاتف أو الجهاز اللوحي.',
+      'مشغل الفيديو لا يعمل على هذا الجهاز. يرجى استخدام الهاتف أو الجهاز اللوحي.',
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: Colors.orange,
       colorText: Colors.white,
@@ -298,7 +346,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         // Try one more time
         await _videoController!.setVolume(1.0);
       }
-
     } catch (e) {
       print('🔊 Error setting volume: $e');
       // Try to set volume even if there's an error
@@ -332,11 +379,14 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
       // Wait for controller to be ready
       await Future.delayed(const Duration(seconds: 1));
-      print('🎬 YouTube player initialized, mute status: ${_youtubeController!.flags.mute}');
+      print(
+        '🎬 YouTube player initialized, mute status: ${_youtubeController!.flags.mute}',
+      );
 
       // Show interstitial ad when YouTube video starts (with 50% probability)
       final random = DateTime.now().millisecondsSinceEpoch % 10;
-      if (random < 5 && _adService.shouldShowInterstitial()) { // 50% chance
+      if (random < 5 && _adService.shouldShowInterstitial()) {
+        // 50% chance
         print('🎬 Showing interstitial ad before YouTube video playback');
         _adService.showInterstitialAd(() {
           setState(() {
@@ -368,6 +418,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   @override
   void dispose() {
     _stopProgressTimer();
+    _adService
+        .stopVideoAdTimer(); // Stop video ad timer when leaving video screen
     _videoController?.dispose();
     _chewieController?.dispose();
     _youtubeController?.dispose();
@@ -376,7 +428,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   // Continuous watching functionality
   void _startProgressTimer() {
-    if (_isYouTubeVideo || _isDailymotionVideo) return; // Only for regular video player
+    if (_isYouTubeVideo || _isDailymotionVideo)
+      return; // Only for regular video player
 
     _stopProgressTimer(); // Stop any existing timer
 
@@ -391,7 +444,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 
   void _saveCurrentProgress() {
-    if (_isYouTubeVideo || _isDailymotionVideo || _videoController == null) return;
+    if (_isYouTubeVideo || _isDailymotionVideo || _videoController == null)
+      return;
 
     try {
       final position = _videoController!.value.position;
@@ -410,7 +464,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 
   void _checkForSavedPosition() {
-    if (_isYouTubeVideo || _isDailymotionVideo) return; // Only for regular video player
+    if (_isYouTubeVideo || _isDailymotionVideo)
+      return; // Only for regular video player
 
     try {
       final duration = _videoController?.value.duration;
@@ -458,8 +513,115 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     }
   }
 
+  Widget _buildIframePlayer() {
+    // Extract iframe src URL if the videoUrl contains iframe HTML
+    String iframeUrl = widget.videoUrl;
+    if (widget.videoUrl.contains('<iframe')) {
+      // Extract src from iframe tag
+      final srcMatch = RegExp(r'src="([^"]*)"').firstMatch(widget.videoUrl);
+      if (srcMatch != null) {
+        iframeUrl = srcMatch.group(1)!;
+      }
+    }
+
+    return Container(
+      color: Colors.black,
+      child: Stack(
+        children: [
+          // InAppWebView for iframe content
+          InAppWebView(
+            initialUrlRequest: URLRequest(url: WebUri(iframeUrl)),
+            onWebViewCreated: (controller) {
+              // Inject JavaScript to unmute the video after loading
+              controller.evaluateJavascript(
+                source: '''
+                (function() {
+                  // Try to unmute the video
+                  var video = document.querySelector('video');
+                  if (video) {
+                    video.muted = false;
+                    video.volume = 1.0;
+                  }
+
+                  // Try to click unmute button if it exists
+                  setTimeout(function() {
+                    var unmuteButton = document.querySelector('[data-testid="unmute-button"]') ||
+                                     document.querySelector('.unmute-button') ||
+                                     document.querySelector('[aria-label*="Unmute"]') ||
+                                     document.querySelector('[title*="Unmute"]');
+                    if (unmuteButton) {
+                      unmuteButton.click();
+                    }
+                  }, 2000);
+                })();
+              ''',
+              );
+            },
+          ),
+
+          // Back button overlay
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 8,
+            left: 8,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Get.back(),
+              tooltip: 'العودة',
+            ),
+          ),
+
+          // Title overlay
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 8,
+            left: 56,
+            right: 56,
+            child: Text(
+              widget.movieTitle,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _launchUrl(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Fallback: try to launch without external mode
+        await launchUrl(uri);
+      }
+    } catch (e) {
+      print('Error launching URL: $e');
+      // Show error message to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('فشل في فتح الفيديو. يرجى المحاولة مرة أخرى.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Handle iframe videos (like VK Video)
+    if (_isIframeVideo) {
+      return _buildIframePlayer();
+    }
+
     // Handle Dailymotion videos
     if (_isDailymotionVideo) {
       return DailymotionPlayer(
@@ -476,16 +638,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(
-              color: Colors.red,
-            ),
+            CircularProgressIndicator(color: Colors.red),
             SizedBox(height: 16),
             Text(
               'جاري تحميل الفيديو...',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: Colors.white, fontSize: 16),
             ),
           ],
         ),
@@ -503,29 +660,19 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           ),
         ),
         builder: (context, player) {
-          return Center(
-            child: player,
-          );
+          return Center(child: player);
         },
       );
     } else if (!_isYouTubeVideo && _chewieController != null) {
       // Chewie player
-      content = Center(
-        child: Chewie(
-          controller: _chewieController!,
-        ),
-      );
+      content = Center(child: Chewie(controller: _chewieController!));
     } else {
       // Fallback error screen
       content = Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              color: Colors.red,
-              size: 80,
-            ),
+            const Icon(Icons.error_outline, color: Colors.red, size: 80),
             const SizedBox(height: 24),
             const Text(
               'خطأ في تحميل الفيديو',
@@ -539,10 +686,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             const SizedBox(height: 12),
             const Text(
               'تحقق من صحة الرابط أو اتصال الإنترنت',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: Colors.grey, fontSize: 16),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
@@ -562,7 +706,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               label: const Text('العودة'),
               style: TextButton.styleFrom(
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
               ),
             ),
           ],
@@ -628,7 +775,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
                               ),
                             ),
                             TextButton.icon(
@@ -637,7 +787,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                               label: const Text('من البداية'),
                               style: TextButton.styleFrom(
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
                               ),
                             ),
                           ],
